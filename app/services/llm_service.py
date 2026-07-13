@@ -1,24 +1,18 @@
-import os
-
-from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
+from ..core import config
 
-load_dotenv()
 
-
-class HuggingFaceError(RuntimeError):
-    """Erreur levée lorsqu'un appel au modèle Hugging Face échoue."""
+class HuggingFaceError(RuntimeError): ...
 
 
 class VesperLLM:
     def __init__(self) -> None:
-        token = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_API")
-        if not token:
-            raise HuggingFaceError(
-                "HF_TOKEN est manquant. Ajoute-le dans le fichier .env."
-            )
+        token = config.HUGGING_FACE_API
 
-        self.model = os.getenv("HF_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+        if not token:
+            raise HuggingFaceError("token miss")
+
+        self.model = config.HF_MODEL
         self.client = InferenceClient(model=self.model, token=token, provider="auto")
 
     def generate(self, prompt: str, max_new_tokens: int = 100) -> str:
