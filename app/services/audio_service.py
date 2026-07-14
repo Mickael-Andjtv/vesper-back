@@ -60,9 +60,14 @@ class PlayMusic:
                 "Impossible de récupérer le flux audio."
             ) from error
 
+    def prepare(self) -> None:
+        """Resolve and cache a fresh source URL before sending an HTTP response."""
+        self.url = self._extract_url()
+
     def stream(self) -> Iterator[bytes]:
         """Yield MP3 chunks and stop FFmpeg when the consumer disconnects."""
-        self.url = self._extract_url()
+        if self.url is None:
+            self.prepare()
 
         ffmpeg_cmd = [
             "ffmpeg",

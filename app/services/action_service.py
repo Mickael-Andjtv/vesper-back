@@ -2,18 +2,17 @@ import webbrowser
 import subprocess
 import urllib.parse
 
+from .audio_service import PlayMusic
 
-def execute_vesper_action(action: str, action_data: str) -> str:
+
+def execute_vesper_action(action: str, action_data: str) -> str | PlayMusic:
 
     if action == "none":
         return "Aucune action requise."
 
     try:
         if action == "play_music":
-            query = urllib.parse.quote(action_data)
-            url = f"https://www.youtube.com/results?search_query={query}"
-            webbrowser.open(url)
-            return f"Musique lancée dans le navigateur pour : {action_data}"
+            return PlayMusic(action_data)
 
         elif action == "web_search":
             query = urllib.parse.quote(action_data)
