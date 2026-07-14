@@ -10,7 +10,7 @@ llm_service = VesperLLM()
 @app.post("/generate")
 async def generate_text(request: GenerateRequest):
     try:
-        result = llm_service.generate(request.prompt, request.max_new_tokens)
-        return {"text": result}
+        return llm_service.generate(request.prompt, request.max_new_tokens)
+
     except HuggingFaceError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
