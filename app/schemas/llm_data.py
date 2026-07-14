@@ -1,4 +1,6 @@
 from enum import Enum
+import json
+import re
 from typing import Any
 
 from pydantic import BaseModel, model_validator
@@ -28,11 +30,28 @@ EMOTION_ALIASES = {
 
 ACTION_ALIASES = {
     "code": ActionEnum.SHOW_CODE.value,
+    "showcode": ActionEnum.SHOW_CODE.value,
     "music": ActionEnum.PLAY_MUSIC.value,
+    "playmusic": ActionEnum.PLAY_MUSIC.value,
     "timer": ActionEnum.START_TIMER.value,
+    "starttimer": ActionEnum.START_TIMER.value,
     "weather": ActionEnum.GET_WEATHER.value,
+    "getweather": ActionEnum.GET_WEATHER.value,
     "search": ActionEnum.WEB_SEARCH.value,
+    "websearch": ActionEnum.WEB_SEARCH.value,
+    "meteo": ActionEnum.GET_WEATHER.value,
+    "minuteur": ActionEnum.START_TIMER.value,
+    "musique": ActionEnum.PLAY_MUSIC.value,
+    "recherche": ActionEnum.WEB_SEARCH.value,
+    "no_action": ActionEnum.NONE.value,
+    "nothing": ActionEnum.NONE.value,
 }
+
+
+def normalize_label(value: str) -> str:
+    """Normalise getWeather, get-weather et get weather vers get_weather."""
+    value = re.sub(r"(?<=[a-z])(?=[A-Z])", "_", value)
+    return re.sub(r"[\s-]+", "_", value.strip().lower())
 
 
 class VesperResponse(BaseModel):
@@ -62,10 +81,18 @@ class VesperResponse(BaseModel):
 
         action = response.get("action")
         if isinstance(action, str):
-            action = action.strip().lower()
+            action = normalize_label(action)
             response["action"] = ACTION_ALIASES.get(action, action)
             if response["action"] not in ActionEnum._value2member_map_:
                 response["action"] = ActionEnum.NONE.value
+
+        action_data = response.get("action_data")
+        if action_data is None:
+            response["action_data"] = ""
+        elif isinstance(action_data, (dict, list)):
+            response["action_data"] = json.dumps(action_data, ensure_ascii=False)
+        elif not isinstance(action_data, str):
+            response["action_data"] = str(action_data)
 
         response.setdefault(
             "reply",
