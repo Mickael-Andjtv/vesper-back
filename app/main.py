@@ -2,10 +2,14 @@ from urllib.parse import urlencode
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from .services import HuggingFaceError, VesperLLM
-from .services.action_service import execute_vesper_action
-from .services.audio_service import AudioExtractionError, PlayMusic
 from .schemas import GenerateRequest
+from .services import (
+    AudioExtractionError,
+    HuggingFaceError,
+    PlayMusic,
+    VesperLLM,
+    execute_vesper_action,
+)
 
 
 app = FastAPI(title="Vesper API")
