@@ -1,8 +1,11 @@
-import requests
+import httpx
 from ..schemas import QueryClient
 from ..core import get_settings, Settings
 from fastapi import Depends
 from typing import Annotated
+
+
+class LlmError(RuntimeError): ...
 
 
 class LlmService:
@@ -25,15 +28,29 @@ class LlmService:
             "model": self.settings.HF_MODEL,
         }
 
-    def get_response(self):
+    async def get_response(self):
         headers = {
             "Authorization": f"Bearer {self.settings.HF_TOKEN}",
+            "Content-Type": "application/json",
         }
-        response = requests.post(
-            self.settings.API_URL or "", headers=headers, json=self.payload
-        )
 
-        print("Nice ", response, response.json())
-        if response.status_code == 200:
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(60.0, connect=10.0),
+                limits=httpx.Limits(max_keepalive_connections=5),
+            ) as client:
+                response = await client.post(
+                    self.settings.API_URL, headers=headers, json=self.payload
+                )
+
+            if response.status_code != 200:
+                raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
+
             return response.json()
-        return {"erreur": "error"}
+
+        except httpx.TimeoutException:
+            raise LlmError("Timeout : le serveur met trop de temps à répondre")
+        except httpx.RequestError as e:
+            raise LlmError(f"Erreur réseau : {str(e)}")
+        except Exception as e:
+            raise LlmError(f"Erreur inattendue : {str(e)}")

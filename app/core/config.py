@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Vesper"
     HF_TOKEN: Optional[str] = None
     HF_MODEL: Optional[str] = None
-    API_URL: Optional[str] = None
+    API_URL: str = ""
 
     model_config = SettingsConfigDict(env_file=".env")
 

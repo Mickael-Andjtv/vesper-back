@@ -11,5 +11,4 @@ app = FastAPI()
 async def generate(
     query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
 ):
-    print(settings)
-    return LlmService(query, settings).get_response()
+    return await LlmService(query, settings).get_response()
