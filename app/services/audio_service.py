@@ -1,4 +1,5 @@
 import subprocess
+from typing import cast, Any
 from collections.abc import Iterator
 
 import yt_dlp
@@ -10,12 +11,10 @@ YDL_OPTION = {
 }
 
 
-class AudioExtractionError(RuntimeError):
-    """Raised when no playable audio stream can be extracted."""
+class AudioExtractionError(RuntimeError): ...
 
 
-class AudioStreamError(RuntimeError):
-    """Raised when FFmpeg cannot transcode the audio stream."""
+class AudioStreamError(RuntimeError): ...
 
 
 class PlayMusic:
@@ -28,8 +27,10 @@ class PlayMusic:
 
     def _extract_url(self) -> str:
         try:
-            with yt_dlp.YoutubeDL(YDL_OPTION) as ydl:
-                info = ydl.extract_info(self.query, download=False)
+            with yt_dlp.YoutubeDL(cast(Any, YDL_OPTION)) as ydl:
+                info = cast(
+                    dict[str, Any], ydl.extract_info(self.query, download=False)
+                )
                 if not info:
                     raise AudioExtractionError("Aucun résultat musical trouvé.")
 
@@ -61,11 +62,9 @@ class PlayMusic:
             ) from error
 
     def prepare(self) -> None:
-        """Resolve and cache a fresh source URL before sending an HTTP response."""
         self.url = self._extract_url()
 
     def stream(self) -> Iterator[bytes]:
-        """Yield MP3 chunks and stop FFmpeg when the consumer disconnects."""
         if self.url is None:
             self.prepare()
 
