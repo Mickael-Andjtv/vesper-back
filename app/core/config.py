@@ -1,12 +1,17 @@
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-
-class Configuration:
-    HUGGING_FACE_API = os.getenv("HUGGING_FACE_API")
-    HF_MODEL=os.getenv("HF_MODEL")
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
 
 
-config = Configuration()
+class Settings(BaseSettings):
+    APP_NAME: str = "Vesper"
+    HF_TOKEN: Optional[str] = None
+    HF_MODEL: Optional[str] = None
+    API_URL: str = ""
+
+    model_config = SettingsConfigDict(env_file=".env")
+
+
+@lru_cache
+def get_settings():
+    return Settings()

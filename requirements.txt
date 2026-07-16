@@ -1,5 +1,1 @@
 fastapi[standard]
-google-genai
-huggingface_hub
-python-dotenv
-yt-dlp

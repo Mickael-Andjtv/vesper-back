@@ -1,8 +1,16 @@
-from huggingface_hub import InferenceClient
-from ..core import config
-from ..schemas import VesperResponse, ActionEnum, EmotionEnum
+import httpx
+from ..schemas import QueryClient, QueryResponse
+from ..core import get_settings, Settings
+from fastapi import Depends
+from typing import Annotated
 
-SYSTEM_INSTRUCTION = """
+
+class LlmError(RuntimeError): ...
+
+
+class LlmService:
+    # TODO create an account and change the user of Vesper
+    SYSTEM_INSTRUCTION = """
 Tu es Vesper, un assistant de bureau incarné, cynique, intelligent mais secrètement attachant.
 Tu discutes avec Mickael, un ingénieur en IA talentueux.
 Analyse le ton de ses phrases avec finesse :
@@ -27,44 +35,44 @@ Réponds toujours avec les quatre clés reply, emotion, action et action_data.
 Exemple : {"reply":"Je réfléchis.","emotion":"thinking","action":"none","action_data":""}
 """
 
+    def __init__(
+        self, query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
+    ):
+        self.settings = settings
+        self.payload = {
+            "messages": [
+                {"role": "system", "content": self.SYSTEM_INSTRUCTION},
+                {"role": "user", "content": query.prompt},
+            ],
+            "model": self.settings.HF_MODEL,
+            "response_format": {"type": "json_object"},
+        }
 
-class HuggingFaceError(RuntimeError): ...
+    async def get_response(self) -> QueryResponse:
+        headers = {
+            "Authorization": f"Bearer {self.settings.HF_TOKEN}",
+            "Content-Type": "application/json",
+        }
 
-
-class VesperLLM:
-    def __init__(self) -> None:
-        token = config.HUGGING_FACE_API
-
-        if not token:
-            raise HuggingFaceError("token miss")
-
-        self.model = config.HF_MODEL
-        self.client = InferenceClient(model=self.model, token=token, provider="auto")
-
-    def generate(self, prompt: str, max_new_tokens: int = 500) -> VesperResponse:
         try:
-            response = self.client.chat_completion(
-                messages=[
-                    {"role": "system", "content": SYSTEM_INSTRUCTION},
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=max_new_tokens,
-                temperature=0.7,
-                response_format={
-                    "type": "json_object",
-                    "value": VesperResponse.model_json_schema(),
-                },
-            )
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(60.0, connect=10.0),
+                limits=httpx.Limits(max_keepalive_connections=5),
+            ) as client:
+                response = await client.post(
+                    self.settings.API_URL, headers=headers, json=self.payload
+                )
 
-            raw_json = response.choices[0].message.content or "{}"
+            if response.status_code != 200:
+                raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
 
-            return VesperResponse.model_validate_json(raw_json)
+            response = response.json()
 
-        except Exception as error:
-            print(f"[ERROR HF] Échec de la génération ou du parsing : {error}")
-            return VesperResponse(
-                reply="Désolé Mickael, mon cerveau a eu un court-circuit. Tu as dit quoi ?",
-                emotion=EmotionEnum.SURPRISED,
-                action=ActionEnum.NONE,
-                action_data="",
-            )
+            return QueryResponse.model_validate(response)
+
+        except httpx.TimeoutException:
+            raise LlmError("Timeout : le serveur met trop de temps à répondre")
+        except httpx.RequestError as e:
+            raise LlmError(f"Erreur réseau : {str(e)}")
+        except Exception as e:
+            raise LlmError(f"Erreur inattendue : {str(e)}")
