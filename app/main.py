@@ -1,7 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from .schemas import QueryClient
+from .services import LlmService
+from .core import Settings, get_settings
+from typing import Annotated
 
 app = FastAPI()
 
-@app.get("/demands")
-async def demands():
-    return "hello world :-)"
+
+@app.post("/generate")
+async def generate(
+    query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
+):
+    print(settings)
+    return LlmService(query, settings).get_response()
