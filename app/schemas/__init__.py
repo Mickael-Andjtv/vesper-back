@@ -1,3 +1,3 @@
-from .query import QueryClient
+from .query import QueryClient, QueryResponse
 
-__all__ = ["QueryClient"]
+__all__ = ["QueryClient", "QueryResponse"]
