@@ -2,7 +2,8 @@ import httpx
 from ..schemas import QueryClient, QueryResponse
 from ..core import get_settings, Settings
 from fastapi import Depends
-from typing import Annotated
+from typing import Annotated, Any
+
 
 
 class LlmError(RuntimeError): ...
@@ -39,7 +40,7 @@ Exemple : {"reply":"Je réfléchis.","emotion":"thinking","action":"none","actio
         self, query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
     ):
         self.settings = settings
-        self.payload = {
+        self.payload:dict[str, Any] = {
             "messages": [
                 {"role": "system", "content": self.SYSTEM_INSTRUCTION},
                 {"role": "user", "content": query.prompt},

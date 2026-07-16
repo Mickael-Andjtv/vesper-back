@@ -1,6 +1,7 @@
 from pydantic import BaseModel, model_validator
 from .llm_data import EmotionEnum, ActionEnum
 import json
+from typing import Any
 
 
 class QueryClient(BaseModel):
@@ -15,8 +16,8 @@ class QueryResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_llm_response(cls, values: dict) -> dict:
-        response_loads: dict = json.loads(
+    def normalize_llm_response(cls, values: Any) -> dict[str, str]:
+        response_loads = json.loads(
             values.get("choices", [])[0].get("message", {}).get("content", "")
         )
 

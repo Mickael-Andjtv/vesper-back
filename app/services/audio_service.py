@@ -4,7 +4,7 @@ from collections.abc import Iterator
 
 import yt_dlp
 
-YDL_OPTION = {
+YDL_OPTION: dict[str, Any] = {
     "format": "bestaudio/best",
     "default_search": "ytsearch",
     "quiet": True,
@@ -23,7 +23,7 @@ class PlayMusic:
         if not self.query:
             raise ValueError("La requête musicale ne peut pas être vide.")
 
-        self.url: str | None = None
+        self.url: str
 
     def _extract_url(self) -> str:
         try:
@@ -65,10 +65,8 @@ class PlayMusic:
         self.url = self._extract_url()
 
     def stream(self) -> Iterator[bytes]:
-        if self.url is None:
-            self.prepare()
-
-        ffmpeg_cmd = [
+        self.prepare()
+        ffmpeg_cmd: list[str] = [
             "ffmpeg",
             "-nostdin",
             "-hide_banner",
