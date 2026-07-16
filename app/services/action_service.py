@@ -1,48 +1,28 @@
-import webbrowser
-import subprocess
-import urllib.parse
-
-from .audio_service import PlayMusic
+from ..schemas import ActionEnum
+from .weather_service import Weather
 
 
-def execute_vesper_action(action: str, action_data: str) -> str | PlayMusic:
+class VesperAction:
+    def __init__(self, action: ActionEnum, action_data: str) -> None:
+        self.action = action
+        self.action_data = action_data
 
-    if action == "none":
-        return "Aucune action requise."
-
-    try:
-        if action == "play_music":
-            return PlayMusic(action_data)
-
-        elif action == "web_search":
-            query = urllib.parse.quote(action_data)
-            url = f"https://www.google.com/search?q={query}"
-            webbrowser.open(url)
-            return f"Recherche Google ouverte pour : {action_data}"
-
-        elif action == "start_timer":
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Vesper Timer",
-                    f"Minuteur lancé pour {action_data}",
-                    "-i",
-                    "alarm",
-                ]
+    def execute_action(self):
+        if self.action == "get_weather":
+            data = self._weather_action()
+            return (
+                f"Actuellement à {self.action_data}, il fait {data['temp_C']}°C, "
+                f"{data['lang_fr'][0]['value'].lower()}. "
+                f"L'humidité est de {data['humidity']}% et le vent souffle à "
+                f"{data['windspeedKmph']} km/h."
             )
-            return f"Minuteur programmé pour : {action_data}"
+        elif self.action == "web_search":
+            return ""
+        return ""
 
-        elif action == "show_code":
-            return "Code prêt à être affiché."
+    def _weather_action(self):
+        data = Weather().get_weather(self.action_data)
+        return data
 
-        elif action == "get_weather":
-            city = urllib.parse.quote(action_data) if action_data else ""
-            url = f"https://wttr.in/{city}"
-            webbrowser.open(url)
-            return f"Météo affichée pour : {action_data or 'votre position'}"
-
-        else:
-            return f"Action '{action}' non reconnue par le système."
-
-    except Exception as e:
-        return f"Échec de l'exécution de l'action {action} : {str(e)}"
+    def _search_action(self):
+        pass

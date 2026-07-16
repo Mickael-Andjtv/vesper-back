@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from .schemas import QueryClient
-from .services import LlmService, PlayMusic, AudioExtractionError
+from .services import LlmService, PlayMusic, AudioExtractionError, VesperAction
 from .core import Settings, get_settings
 from typing import Annotated
 from fastapi.responses import StreamingResponse
@@ -12,7 +12,9 @@ app = FastAPI()
 async def generate(
     query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
 ):
-    return await LlmService(query, settings).get_response()
+    res = await LlmService(query, settings).get_response()
+    res.reply = VesperAction(res.action, res.action_data).execute_action()
+    return res
 
 
 @app.get("/music/stream", name="stream_music")
