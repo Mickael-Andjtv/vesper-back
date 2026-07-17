@@ -17,3 +17,7 @@ class ActionEnum(str, Enum):
     PLAY_MUSIC = "play_music"
     GET_WEATHER = "get_weather"
     WEB_SEARCH = "web_search"
+
+class Model(str, Enum):
+    Q = "q"
+    G = "g"

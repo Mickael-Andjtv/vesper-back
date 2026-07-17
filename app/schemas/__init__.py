@@ -1,4 +1,4 @@
 from .query import QueryClient, QueryResponse
-from .llm_data import EmotionEnum, ActionEnum
+from .llm_data import EmotionEnum, ActionEnum, Model
 
-__all__ = ["QueryClient", "QueryResponse", "EmotionEnum", "ActionEnum"]
+__all__ = ["QueryClient", "QueryResponse", "EmotionEnum", "ActionEnum", "Model"]

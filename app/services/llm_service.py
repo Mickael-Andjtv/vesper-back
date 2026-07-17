@@ -1,8 +1,15 @@
 import httpx
-from ..schemas import QueryClient, QueryResponse
+from ..schemas import QueryClient, QueryResponse, Model
 from ..core import get_settings, Settings
 from fastapi import Depends
-from typing import Annotated, Any
+from typing import Annotated, Union
+from dotenv import load_dotenv
+from groq import Groq
+
+
+load_dotenv()
+
+
 
 
 class LlmError(RuntimeError): ...
@@ -53,44 +60,51 @@ Exemples :
 - Question générale connue : {"reply":"Oui, Python est un langage de programmation interprété.","emotion":"neutral","action":"none","action_data":""}
 """
 
-    def __init__(
-        self, query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
-    ):
-        self.settings = settings
-        self.payload: dict[str, Any] = {
+    def __init__(self, query: QueryClient):
+        self.query = query
+        
+
+    def _build_payload(self,model:str, context:str = SYSTEM_INSTRUCTION)->dict:
+        return {
             "messages": [
-                {"role": "system", "content": self.SYSTEM_INSTRUCTION},
-                {"role": "user", "content": query.prompt},
+                {"role": "system", "content": context},
+                {"role": "user", "content": self.query.prompt},
             ],
-            "model": self.settings.HF_MODEL,
+            "model": model,
             "response_format": {"type": "json_object"},
         }
 
-    async def get_response(self) -> QueryResponse:
+    async def get_response(self,model:Union[Model, str], settings: Annotated[Settings, Depends(get_settings)]) -> QueryResponse:
         headers = {
-            "Authorization": f"Bearer {self.settings.HF_TOKEN}",
+            "Authorization": f"Bearer {settings.HF_TOKEN}",
             "Content-Type": "application/json",
         }
+        model  = Model(model)
 
         try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(60.0, connect=10.0),
-                limits=httpx.Limits(max_keepalive_connections=5),
-            ) as client:
-                response = await client.post(
-                    self.settings.API_URL, headers=headers, json=self.payload
-                )
+                match model:
+                    case Model.Q:
+                        async with httpx.AsyncClient(
+                        timeout=httpx.Timeout(60.0, connect=10.0),
+                        limits=httpx.Limits(max_keepalive_connections=5),
+                        ) as client:
+                            response = await client.post(
+                                settings.API_URL, headers=headers, json=self._build_payload(settings.HF_MODEL or "")
+                            )
+                            if response.status_code != 200:
+                                raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
 
-            if response.status_code != 200:
-                raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
+                            response = response.json()
+                    case Model.G:
+                        client = Groq()
+                        response = client.chat.completions.create(**self._build_payload(settings.GROQ_MODEL or ""))
+                        response = response.dict()
 
-            response = response.json()
-
-            return QueryResponse.model_validate(response)
-
+                return QueryResponse.model_validate(response)
         except httpx.TimeoutException:
             raise LlmError("Timeout : le serveur met trop de temps à répondre")
         except httpx.RequestError as e:
             raise LlmError(f"Erreur réseau : {str(e)}")
         except Exception as e:
             raise LlmError(f"Erreur inattendue : {str(e)}")
+    

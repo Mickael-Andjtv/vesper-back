@@ -12,7 +12,7 @@ app = FastAPI()
 async def generate(
     query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
 ):
-    res = await LlmService(query, settings).get_response()
+    res = await LlmService(query).get_response("g", settings)
     # res.reply = VesperAction(res.action, res.action_data).execute_action()
     return res
 
