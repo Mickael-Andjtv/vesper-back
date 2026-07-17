@@ -10,8 +10,6 @@ from groq import Groq
 load_dotenv()
 
 
-
-
 class LlmError(RuntimeError): ...
 
 
@@ -62,9 +60,8 @@ Exemples :
 
     def __init__(self, query: QueryClient):
         self.query = query
-        
 
-    def _build_payload(self,model:str, context:str)->dict:
+    def _build_payload(self, model: str, context: str) -> dict:
         return {
             "messages": [
                 {"role": "system", "content": context},
@@ -74,37 +71,47 @@ Exemples :
             "response_format": {"type": "json_object"},
         }
 
-    async def get_response(self,model:Union[Model, str], settings: Annotated[Settings, Depends(get_settings)], context:str=SYSTEM_INSTRUCTION) -> QueryResponse:
+    async def get_response(
+        self,
+        model: Union[Model, str],
+        settings: Annotated[Settings, Depends(get_settings)],
+        context: str = SYSTEM_INSTRUCTION,
+    ) -> QueryResponse:
         headers = {
             "Authorization": f"Bearer {settings.HF_TOKEN}",
             "Content-Type": "application/json",
         }
-        model  = Model(model)
+        model = Model(model)
 
         try:
-                match model:
-                    case Model.Q:
-                        async with httpx.AsyncClient(
+            match model:
+                case Model.Q:
+                    async with httpx.AsyncClient(
                         timeout=httpx.Timeout(60.0, connect=10.0),
                         limits=httpx.Limits(max_keepalive_connections=5),
-                        ) as client:
-                            response = await client.post(
-                                settings.API_URL, headers=headers, json=self._build_payload(settings.HF_MODEL or "", context)
+                    ) as client:
+                        response = await client.post(
+                            settings.API_URL,
+                            headers=headers,
+                            json=self._build_payload(settings.HF_MODEL or "", context),
+                        )
+                        if response.status_code != 200:
+                            raise LlmError(
+                                f"Erreur {response.status_code}: {response.text[:200]}"
                             )
-                            if response.status_code != 200:
-                                raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
 
-                            response = response.json()
-                    case Model.G:
-                        client = Groq()
-                        response = client.chat.completions.create(**self._build_payload(settings.GROQ_MODEL or "",context))
-                        response = response.dict()
+                        response = response.json()
+                case Model.G:
+                    client = Groq()
+                    response = client.chat.completions.create(
+                        **self._build_payload(settings.GROQ_MODEL or "", context)
+                    )
+                    response = response.dict()
 
-                return QueryResponse.model_validate(response)
+            return QueryResponse.model_validate(response)
         except httpx.TimeoutException:
             raise LlmError("Timeout : le serveur met trop de temps à répondre")
         except httpx.RequestError as e:
             raise LlmError(f"Erreur réseau : {str(e)}")
         except Exception as e:
             raise LlmError(f"Erreur inattendue : {str(e)}")
-    

@@ -14,7 +14,9 @@ async def generate(
 ):
     res = await LlmService(query).get_response("g", settings)
     first_reply = res.reply
-    action_reply = await VesperAction(res.action, res.action_data, settings, query).execute_action()
+    action_reply = await VesperAction(
+        res.action, res.action_data, settings, query
+    ).execute_action()
     res.reply = first_reply if not action_reply else action_reply
     return res
 
