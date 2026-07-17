@@ -13,7 +13,7 @@ async def generate(
     query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
 ):
     res = await LlmService(query, settings).get_response()
-    res.reply = VesperAction(res.action, res.action_data).execute_action()
+    # res.reply = VesperAction(res.action, res.action_data).execute_action()
     return res
 
 
