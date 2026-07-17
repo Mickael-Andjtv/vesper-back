@@ -8,7 +8,10 @@ class Weather:
     def get_weather(self, city: str):
         try:
             url = f"https://wttr.in/{city}?lang=fr&format=j1"
-            response = requests.get(url)
+            headers = {
+                "User-Agent": "curl/7.81.0"
+            }
+            response = requests.get(url, headers=headers, timeout=10)
 
             if response.status_code != 200:
                 raise WeatherError("Error fetching weather data.")

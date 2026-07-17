@@ -1,15 +1,24 @@
-from ..schemas import ActionEnum
+from ..schemas import ActionEnum, QueryClient
 from .weather_service import Weather
+from .web_search import WebSearch
 from .llm_service import LlmService
+from typing import Annotated
+from ..core import get_settings, Settings
+from fastapi import Depends
+
+
+
 
 
 
 class VesperAction:
-    def __init__(self, action: ActionEnum, action_data: str) -> None:
+    def __init__(self, action: ActionEnum, action_data: str, settings: Annotated[Settings, Depends(get_settings)] ,query:QueryClient) -> None:
         self.action = action
         self.action_data = action_data
+        self.query = query
+        self.settings = settings
 
-    def execute_action(self):
+    async def execute_action(self)->str:
         if self.action == "get_weather":
             data = self._weather_action()
             return (
@@ -19,12 +28,22 @@ class VesperAction:
                 f"{data['windspeedKmph']} km/h."
             )
         elif self.action == "web_search":
-            return ""
+            res = await self._search_action()
+            print(res.reply)
+            return res.reply
         return ""
 
     def _weather_action(self):
         data = Weather().get_weather(self.action_data)
         return data
 
-    def _search_action(self):
-        pass
+    async def _search_action(self):
+        web_data = WebSearch().get_context(self.query.prompt)
+        context = (
+        f"{LlmService.SYSTEM_INSTRUCTION}\n\n"
+        f"CONTEXTE DE RECHERCHE WEB RECENT : {web_data}\n"
+        f"Utilise ce contexte pour formuler ta 'reply' dans le JSON."
+    )
+        return await LlmService(self.query).get_response('g', self.settings, context)
+    
+

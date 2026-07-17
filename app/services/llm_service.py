@@ -64,7 +64,7 @@ Exemples :
         self.query = query
         
 
-    def _build_payload(self,model:str, context:str = SYSTEM_INSTRUCTION)->dict:
+    def _build_payload(self,model:str, context:str)->dict:
         return {
             "messages": [
                 {"role": "system", "content": context},
@@ -74,7 +74,7 @@ Exemples :
             "response_format": {"type": "json_object"},
         }
 
-    async def get_response(self,model:Union[Model, str], settings: Annotated[Settings, Depends(get_settings)]) -> QueryResponse:
+    async def get_response(self,model:Union[Model, str], settings: Annotated[Settings, Depends(get_settings)], context:str=SYSTEM_INSTRUCTION) -> QueryResponse:
         headers = {
             "Authorization": f"Bearer {settings.HF_TOKEN}",
             "Content-Type": "application/json",
@@ -89,7 +89,7 @@ Exemples :
                         limits=httpx.Limits(max_keepalive_connections=5),
                         ) as client:
                             response = await client.post(
-                                settings.API_URL, headers=headers, json=self._build_payload(settings.HF_MODEL or "")
+                                settings.API_URL, headers=headers, json=self._build_payload(settings.HF_MODEL or "", context)
                             )
                             if response.status_code != 200:
                                 raise LlmError(f"Erreur {response.status_code}: {response.text[:200]}")
@@ -97,7 +97,7 @@ Exemples :
                             response = response.json()
                     case Model.G:
                         client = Groq()
-                        response = client.chat.completions.create(**self._build_payload(settings.GROQ_MODEL or ""))
+                        response = client.chat.completions.create(**self._build_payload(settings.GROQ_MODEL or "",context))
                         response = response.dict()
 
                 return QueryResponse.model_validate(response)

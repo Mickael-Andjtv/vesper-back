@@ -13,7 +13,9 @@ async def generate(
     query: QueryClient, settings: Annotated[Settings, Depends(get_settings)]
 ):
     res = await LlmService(query).get_response("g", settings)
-    # res.reply = VesperAction(res.action, res.action_data).execute_action()
+    first_reply = res.reply
+    action_reply = await VesperAction(res.action, res.action_data, settings, query).execute_action()
+    res.reply = first_reply if not action_reply else action_reply
     return res
 
 
