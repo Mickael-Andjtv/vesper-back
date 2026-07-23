@@ -7,7 +7,9 @@ class EmotionEnum(str, Enum):
     SAD = "sad"
     THINKING = "thinking"
     SARCASTIC = "sarcastic"
-    SURPRISED = "surprised"
+    SURPRISED = "surprised",
+    LAUGH = "laugh",
+    ANGRY = "angry"
 
 
 class ActionEnum(str, Enum):
