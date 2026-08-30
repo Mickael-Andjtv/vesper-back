@@ -7,8 +7,8 @@ class EmotionEnum(str, Enum):
     SAD = "sad"
     THINKING = "thinking"
     SARCASTIC = "sarcastic"
-    SURPRISED = "surprised",
-    LAUGH = "laugh",
+    SURPRISED = "surprised"
+    LAUGH = "laugh"
     ANGRY = "angry"
 
 

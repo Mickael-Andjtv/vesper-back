@@ -84,6 +84,8 @@ Exemples :
         }
         model = Model(model)
 
+        print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',settings)
+
         try:
             match model:
                 case Model.Q:

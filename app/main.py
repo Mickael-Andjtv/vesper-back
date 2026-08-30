@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from .schemas import QueryClient, QueryResponse
-from .services import LlmService, PlayMusic, AudioExtractionError, VesperAction
+from .services import LlmService, PlayMusic, AudioExtractionError, VesperAction, SpeechToTextService, SpeechToTextError
 from .core import Settings, get_settings
 from typing import Annotated
 from fastapi.responses import StreamingResponse
